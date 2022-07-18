@@ -1,0 +1,33 @@
+<!--
+ * @Date: 2022-07-18 16:20:05
+ * @LastEditors: xiaoWen
+ * @LastEditTime: 2022-07-18 18:18:51
+ * @FilePath: /study-vue/dist/index.html
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body></body>
+  <script src="./vue.js"></script>
+  <script>
+    const vm = new Vue({
+      data() {
+        return {
+          name: 'hl',
+          age: 3,
+          info: {
+            color: 'green'
+          }
+        };
+      }
+    });
+    console.log('vm: ', vm);
+    vm.name = 'hulu';
+    console.log(vm.name);
+  </script>
+</html>
