@@ -39,9 +39,56 @@
     return Constructor;
   }
 
+  /*
+   * @Date: 2022-07-20 15:14:51
+   * @LastEditors: xiaoWen
+   * @LastEditTime: 2022-07-20 16:11:32
+   * @FilePath: /study-vue/src/array.js
+   */
+  var oldArrayProto = Array.prototype;
+  var newArrayProto = Object.create(oldArrayProto);
+  var methods = ['push', 'pop', 'unshift', 'shift', 'splice', 'reverse'];
+  methods.forEach(function (methosd) {
+    newArrayProto[methosd] = function () {
+      console.log('methosd', methosd);
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var result = oldArrayProto[methosd].apply(this, args); // 需要对新增的数据进行再次劫持
+
+      var newData;
+
+      switch (methosd) {
+        case 'push':
+        case 'unshift':
+          newData = args;
+          break;
+
+        case 'splice':
+          newData = args.slice(2);
+          break;
+      }
+
+      if (newData.length > 0) {
+        console.log('要对数组内新添加的东东做劫持!'); // observe(newData);
+
+        this.__ob__.observerArray(newData);
+      }
+
+      return result;
+    };
+  });
+
   function observe(data) {
     if (_typeof(data) !== 'object' || data === null) {
-      return; // 只对对象（饮用数据类型）劫持
+      return; // 只对对象（引用数据类型）劫持
+    }
+
+    if (data.__ob__ instanceof Observer) {
+      // 说明这个对象已经被代理过了
+      return data.__ob__;
     } // 如果一个对象被劫持过了，那就不需要再被劫持了（可以添加一个实例，来判断是否被劫持）
 
 
@@ -52,7 +99,18 @@
     function Observer(data) {
       _classCallCheck(this, Observer);
 
-      this.walk(data);
+      Object.defineProperty(data, '__ob__', {
+        // 给数据加了个标识，有__ob__，说明已经被观测代理过了
+        value: this,
+        ennumerable: false
+      });
+
+      if (Array.isArray(data)) {
+        data.__proto__ = newArrayProto;
+        this.observerArray(data); // 观察数组类型，减少基本数据类型的劫持
+      } else {
+        this.walk(data);
+      }
     }
 
     _createClass(Observer, [{
@@ -60,6 +118,13 @@
       value: function walk(data) {
         Object.keys(data).forEach(function (key) {
           return defineReactive(data, key, data[key]);
+        });
+      }
+    }, {
+      key: "observerArray",
+      value: function observerArray(data) {
+        data.forEach(function (item) {
+          return observe(item);
         });
       }
     }]);
@@ -74,12 +139,14 @@
 
     Object.defineProperty(target, key, {
       get: function get() {
-        console.log('用户get');
+        // console.log('用户get', key);
         return value;
       },
       set: function set(newValue) {
-        console.log('用户set');
+        // console.log('用户set');
         if (newValue === value) return;
+        observe(newValue); // 应对设置值为新对象的场景
+
         value = newValue;
       }
     });
